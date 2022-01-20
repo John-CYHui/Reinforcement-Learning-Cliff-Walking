@@ -181,31 +181,36 @@ class TDAgent(BaseAgent):
         else:
             raise Exception('Message not understood')
 
+def cliff_walk_policy():
+    """
+    Define walk along cliff policy, (# of states, # of actions)
+    Returns:
+        policy grid
+    """
+    policy_ls = np.ones((env.grid_h * env.grid_w, 4)) * 0.25
+    policy_ls[36] = [1,0,0,0]
+    for i in range(24, 24 + env.grid_w-1):
+        policy_ls[i] = [0,0,0,1]
+    policy_ls[35] = [0,0,1,0]
+    return policy_ls
+
 env = CliffWalkEnvironment()
-env.env_init({ "grid_height": 4, "grid_width": 12 })
-
 agent = TDAgent()
-policy_list = [np.random.dirichlet(np.ones(10), size=1).squeeze() for _ in range(100)]
 
-for n in range(100):
-    gamma = np.random.random()
-    alpha = np.random.random()
-    agent.agent_init({"policy": np.array(policy_list), "discount": gamma, "step_size": alpha})
-    agent.values = np.random.randn(*agent.values.shape)
-    state = np.random.randint(100)
-    agent.agent_start(state)
-    
-    for _ in range(100):
-        prev_agent_vals = agent.values.copy()
-        reward = np.random.random()
-        if np.random.random() > 0.1:
-            next_state = np.random.randint(100)
-            agent.agent_step(reward, next_state)
-            prev_agent_vals[state] = prev_agent_vals[state] + alpha * (reward + gamma * prev_agent_vals[next_state] - prev_agent_vals[state])
-            assert(np.allclose(prev_agent_vals, agent.values))
-            state = next_state
-        else:
-            agent.agent_end(reward)
-            prev_agent_vals[state] = prev_agent_vals[state] + alpha * (reward - prev_agent_vals[state])
-            assert(np.allclose(prev_agent_vals, agent.values))
-            break
+
+env.env_init({ "grid_height": 4, "grid_width": 12 })
+policy_list = cliff_walk_policy()
+agent.agent_init({"policy": np.array(policy_list), "discount": 1, "step_size": 0.01})
+
+# Start episode
+env.env_start()
+reward, state, terminal = env.reward_state_terminal
+action = agent.agent_start(state)
+
+value_estimate = agent.agent_message("get_values")
+print(value_estimate)
+while not terminal:
+    reward, state, terminal = env.env_step(action)
+    action = agent.agent_step(reward, state)
+value_estimate = agent.agent_message("get_values")
+print(value_estimate)
