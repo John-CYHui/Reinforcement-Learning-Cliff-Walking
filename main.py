@@ -182,9 +182,9 @@ class TDAgent(BaseAgent):
             raise Exception('Message not understood')
 
 
-def cliff_walk_policy():
+def optimal_policy(env):
     """
-    Define walk along cliff policy, (# of states, # of actions)
+    Define walk along cliff optimal policy, (# of states, # of actions)
     Returns:
         policy grid
     """
@@ -195,45 +195,64 @@ def cliff_walk_policy():
     policy_ls[35] = [0,0,1,0]
     return policy_ls
 
+def safe_policy(env):
+    """
+    Define safe policy, (# of states, # of actions)
+    Returns:
+        policy grid
+    """
+    policy_ls = np.ones((env.grid_h * env.grid_w, 4)) * 0.25
+    # Go up
+    for i in range(12,37,12):
+        policy_ls[i] = [1, 0, 0, 0]
+    # Go right
+    for i in range(0, 12):
+        policy_ls[i] = [0, 0, 0, 1]
+    # Go down
+    for i in range(11,36,12):
+        policy_ls[i] = [0, 0, 1, 0]
+    return policy_ls
 
 
+if __name__ == "__main__":
+    env = CliffWalkEnvironment()
+    agent = TDAgent()
 
-env = CliffWalkEnvironment()
-agent = TDAgent()
-
-env.env_init({ "grid_height": 4, "grid_width": 12 })
-policy_list = cliff_walk_policy()
-agent.agent_init({"policy": np.array(policy_list), "discount": 1, "step_size": 0.01})
+    env.env_init({ "grid_height": 4, "grid_width": 12 })
+    policy_list = optimal_policy(env)
+    policy_list = safe_policy(env)
+    agent.agent_init({"policy": np.array(policy_list), "discount": 1, "step_size": 0.01})
 
 
-num_episode = 5000
-plt_step = 200
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
-fig, ax = plt.subplots()
-ims = []
+    num_episode = 5000
+    plt_step = 200
+    import matplotlib.pyplot as plt
+    import matplotlib.animation as animation
+    fig, ax = plt.subplots()
+    ims = []
 
-for i in range(num_episode):
-    # Start episode
-    state = env.env_start()
-    action = agent.agent_start(state)
-    reward, state, terminal = env.env_step(action)
-    while not terminal:
-        value_estimate = agent.agent_message("get_values")
-        action = agent.agent_step(reward, state)
+    for i in range(num_episode):
+        # Start episode
+        state = env.env_start()
+        action = agent.agent_start(state)
         reward, state, terminal = env.env_step(action)
-        # For plotting
-        if (i+1) % plt_step == 0:
-            img = ax.imshow(value_estimate.reshape((env.grid_h, env.grid_w)))
-            title = ax.text(0.5,1.05,f"episode {i+1}", 
-                size=plt.rcParams["axes.titlesize"],
-                ha="center", transform=ax.transAxes, )
-            ims.append([img, title])
-    else:
-        agent.agent_end(reward)
-        env.env_cleanup()
-
-ani = animation.ArtistAnimation(fig, ims, interval=50, blit=False,
-                                repeat_delay=1000)
-plt.colorbar(img, shrink = 1, aspect = 10, orientation = 'horizontal')
-plt.show()
+        while not terminal:
+            value_estimate = agent.agent_message("get_values")
+            action = agent.agent_step(reward, state)
+            reward, state, terminal = env.env_step(action)
+            # For plotting
+            if (i+1) % plt_step == 0:
+                img = ax.imshow(value_estimate.reshape((env.grid_h, env.grid_w)))
+                title = ax.text(0.5,1.05,f"Policy Evaluation on \nSafe Policy Predicted Values, Episode {i+1}", 
+                    size=plt.rcParams["axes.titlesize"],
+                    ha="center", transform=ax.transAxes, )
+                ims.append([img, title])
+        else:
+            agent.agent_end(reward)
+            env.env_cleanup()
+            
+    fig.colorbar(img, shrink = 1, aspect = 10, orientation = 'horizontal')
+    ani = animation.ArtistAnimation(fig, ims, interval=50, blit=False,
+                                    repeat_delay=1000)
+    ani.save('./data/readme_gifs/Safe policy.gif', writer='imagemagick', fps=30)
+    plt.show()
