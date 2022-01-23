@@ -15,7 +15,10 @@ The purpose is to implement TD(0) policy evaluation and also Q-Learning, Expecte
 
 ---
 ## Rules
-<p> <img src="data/readme_pics/rules.jpg"/> </p>
+<p> <img src="data/readme_pics/rules.JPG"/> </p>
+A standard undiscounted, episodic task, with start and goal states, and the usual actions causing movement up, down, <br/>
+right, and left. Reward is 1 on all transitions except those into the region marked “The Cli↵.” <br/>
+Stepping into this region incurs a reward of 100 and sends the agent instantly back to the start.<br/>
 
 ## TD Zero
 <p> <img src="data/readme_gifs/Optimal policy.gif"/> </p>
