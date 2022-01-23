@@ -3,7 +3,7 @@ from environment.environment import CliffWalkEnvironment
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
-from plot import plot_policy
+from plot import plot_policy, plot_reward_sum
 
 def optimal_policy(env):
     """
@@ -80,10 +80,11 @@ def TD_zero(policy, num_episode=5000, plt_step=200):
     ani.save('./data/readme_gifs/Safe policy.gif', writer='imagemagick', fps=30)
 
 def TD_control(agents_ls, num_episode=5000):
-    for i in agents_ls:
-        if i == 'QLearning':
+    all_reward_sums = {}
+    for algo in algorithm_ls:
+        if algo == 'QLearning':
             agent = QLearningAgent()
-        if i == 'ExpectedSarsa':
+        if algo == 'ExpectedSarsa':
             agent = ExpectedSarsaAgent()
 
         grid_height = 4
@@ -91,31 +92,35 @@ def TD_control(agents_ls, num_episode=5000):
         env.env_init({ "grid_height": grid_height, "grid_width": grid_width })
         agent.agent_init({"num_actions": 4, "num_states": grid_height * grid_width, "epsilon": 0.1, "step_size": 0.5, "discount": 1.0})
 
-
+        all_reward_sums[algo] = []
         for _ in range(num_episode):
+            reward_sum = 0
             # Start episode
             state = env.env_start()
             action = agent.agent_start(state)
             reward, state, terminal = env.env_step(action)
+            reward_sum += reward
             while not terminal:
                 action = agent.agent_step(reward, state)
                 reward, state, terminal = env.env_step(action)
+                reward_sum += reward
             else:
                 agent.agent_end(reward)
                 env.env_cleanup()
-
+                all_reward_sums[algo].append(reward_sum)
         optimal_policy_map = np.argmax(agent.q, axis = 1).reshape((env.grid_h, env.grid_w))
 
-        plot_policy(optimal_policy_map, i, env.grid_w, env.grid_h)
-
+        plot_policy(optimal_policy_map, algo, env.grid_w, env.grid_h)
+        
+    plot_reward_sum(algorithm_ls, all_reward_sums)
 if __name__ == "__main__":
     env = CliffWalkEnvironment()
-    num_episode = 5000
+    num_episode = 100
     
     # TD prediction
     #TD_zero(optimal_policy, num_episode)
     #TD_zero(safe_policy, num_episode)
     
     # TD control
-    agents_ls = ['QLearning', 'ExpectedSarsa']
-    TD_control(agents_ls, num_episode)
+    algorithm_ls = ['QLearning', 'ExpectedSarsa']
+    TD_control(algorithm_ls, num_episode)

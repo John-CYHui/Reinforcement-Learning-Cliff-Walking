@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import pickle as pk
 import numpy as np
 
-def plot_policy(optimal_policy_grid, agent_name, grid_w, grid_h):
+def plot_policy(optimal_policy_grid, algorithm, grid_w, grid_h):
     horizontal_min, horizontal_max, horizontal_stepsize = 0, grid_w, 1
     vertical_min, vertical_max, vertical_stepsize = 0, grid_h, -1
 
@@ -38,6 +38,15 @@ def plot_policy(optimal_policy_grid, agent_name, grid_w, grid_h):
     # Place Goal Point
     plt.text(grid_w-0.6, 0.4 ,'G', fontsize=20, color = 'g')
     plt.grid(which='major')
-    plt.title(f'$\epsilon$-greedy Optimal Policy Learned by {agent_name}')
+    plt.title(f'$\epsilon$-greedy Optimal Policy Learned by {algorithm}')
     #plt.show()
-    plt.savefig(f'./data/readme_pics/{agent_name}_policy_map.jpg')
+    plt.savefig(f'./data/readme_pics/{algorithm}_policy_map.jpg')
+
+def plot_reward_sum(algorithm_ls, all_reward_sums):
+    fig, ax = plt.subplots()
+    for algo in algorithm_ls:
+        ax.plot(all_reward_sums[algo])
+    ax.legend(algorithm_ls)
+    ax.set_ylim([-30,0])
+    ax.set_title('Reward Sum for different algorithms')
+    plt.savefig(f'./data/readme_pics/reward_sum_comp.jpg')
